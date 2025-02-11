@@ -1,9 +1,7 @@
-import Image from "next/image";
-
 const Header = () => {
   return (
     <header className="bg-[#142239] p-4 flex items-center gap-2">
-      <Image 
+      <img 
         src="/logo.bmp" 
         alt="DES SOLAR PRIVATE LIMITED" 
         // width={60}
