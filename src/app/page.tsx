@@ -1,17 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import toast from 'react-hot-toast';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import AddressForm from '@/components/AddressForm';
 import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { contactSchema, useFormStore } from '@/store/formStore';
+import toast from 'react-hot-toast';
+
 export default function Home() {
-  const [contactDetails, setContactDetails] = useState({
-    phone: '',
-    whatsapp: '',
-    email: ''
+  const [isLoading, setIsLoading] = useState(false);
+  const { register, handleSubmit, watch, formState: { errors } } = useForm({
+    resolver: zodResolver(contactSchema),
+    defaultValues: useFormStore((state) => state.contactDetails)
   });
+  const setContactDetails = useFormStore((state) => state.setContactDetails);
 
   const [addresses, setAddresses] = useState({
     current: {
@@ -40,21 +45,45 @@ export default function Home() {
     }
   });
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'phone' | 'whatsapp') => {
-    const value = e.target.value.replace(/\D/g, ''); // Only allow digits
-    if (value.length <= 10) {
-      setContactDetails(prev => ({ ...prev, [field]: value }));
-    } else {
-      toast.error(`${field === 'phone' ? 'Phone' : 'WhatsApp'} number should be 10 digits`);
+  const router = useRouter();
+
+  // Simulated API call
+  const simulateApiCall = async (data: any) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ success: true });
+      }, 2000);
+    });
+  };
+
+  const onSubmit = async (contactData: any) => {
+    try {
+      setIsLoading(true);
+      
+      // Prepare form data
+      const formData = {
+        contactDetails: contactData,
+        addresses: addresses
+      };
+      
+      // Log form values
+      console.log('Form Data:', formData);
+      
+      // Simulate API call
+      await simulateApiCall(formData);
+      
+      // Update store
+      setContactDetails(contactData);
+      
+      // Show success message
+      toast.success('Form submitted successfully!');
+      
+    } catch (error) {
+      toast.error('Something went wrong!');
+    } finally {
+      setIsLoading(false);
     }
   };
-
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const email = e.target.value;
-    setContactDetails(prev => ({ ...prev, email }));
-  };
-
-  const router = useRouter();
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -62,7 +91,7 @@ export default function Home() {
       
       <main className="flex-1 mx-auto px-4 py-2 min-[500px]:py-4 sm:py-8">
         {/* Header form */}
-        <div className="max-w-4xl mx-auto min-w-[75vw] ">
+        <div className="max-w-4xl mx-auto min-w-[85vw] min-[500px]:min-w-[80vw] sm:min-w-[75vw]">
           <h1 className="text-lg min-[500px]:text-xl sm:text-2xl font-bold text-[#1a2942] mb-1 sm:mb-2">
             Distributor Application Form
           </h1>
@@ -111,9 +140,9 @@ export default function Home() {
           </div>
         </div>
           
-        <div className="max-w-4xl mx-auto p-3 sm:p-4 lg:p-6 rounded-xl border-2 border-gray-200 min-w-[75vw]">
+        <div className="max-w-4xl mx-auto p-3 sm:p-4 lg:p-6 rounded-xl border-2 border-gray-200 min-w-[85vw] min-[500px]:min-w-[80vw] sm:min-w-[75vw]">
           
-          <form className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Contact Details */}
             <div className="space-y-4 sm:space-y-6">
               <h3 className="text-black text-sm min-[500px]:text-base sm:text-lg font-semibold">Contact Details</h3>
@@ -122,41 +151,57 @@ export default function Home() {
                 <div className="w-full">
                   <label className="block text-[#1a2942] text-xs sm:text-sm mb-1 sm:mb-2">Phone Number</label>
                   <input
+                    {...register('phone')}
                     type="tel"
-                    value={contactDetails.phone}
-                    onChange={(e) => handlePhoneChange(e, 'phone')}
+                    maxLength={10}
+                    onKeyPress={(e) => {
+                      if (!/[0-9]/.test(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
                     className="w-full px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm text-gray-500 bg-white border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 placeholder:text-gray-400"
                     placeholder="Enter Phone Number"
-                    maxLength={10}
                   />
+                  {errors.phone && (
+                    <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>
+                  )}
                 </div>
 
                 <div className="w-full">
                   <label className="block text-[#1a2942] text-xs sm:text-sm mb-1 sm:mb-2">Whatsapp Number</label>
                   <input
+                    {...register('whatsapp')}
                     type="tel"
-                    value={contactDetails.whatsapp}
-                    onChange={(e) => handlePhoneChange(e, 'whatsapp')}
+                    maxLength={10}
+                    onKeyPress={(e) => {
+                      if (!/[0-9]/.test(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
                     className="w-full px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm text-gray-500 bg-white border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 placeholder:text-gray-400"
                     placeholder="Enter Whatsapp Number"
-                    maxLength={10}
                   />
-                </div>
+                  {errors.whatsapp && (
+                    <p className="text-red-500 text-xs mt-1">{errors.whatsapp.message}</p>
+                  )}
+                </div>  
 
                 <div className="w-full col-span-1">
                   <label className="block text-[#1a2942] text-xs sm:text-sm mb-1 sm:mb-2">Email</label>
                   <input
+                    {...register('email')}
                     type="email"
-                    value={contactDetails.email}
-                    onChange={handleEmailChange}
-                    onBlur={(e) => { //check when the user leaves the email field or finishes typing
-                      if (e.target.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.target.value)) {
+                    onBlur={(e) => {
+                      if (!e.target.value.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
                         toast.error('Please enter a valid email address');
                       }
                     }}
                     className="w-full px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm text-gray-500 bg-white border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 placeholder:text-gray-400"
                     placeholder="Enter Email"
                   />
+                  {errors.email && (
+                    <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -188,14 +233,18 @@ export default function Home() {
             {/* Form Actions */}
             <div className="flex justify-start space-x-3 sm:space-x-4">
               <button
-                type="button"
-                className="px-4 sm:px-6 py-1 sm:py-1.5 bg-[#172943] text-white rounded text-sm sm:text-base font-medium hover:bg-opacity-90 shadow-sm"
+                type="submit"
+                disabled={isLoading}
+                className={`px-4 sm:px-6 py-1 sm:py-1.5 bg-[#172943] text-white rounded text-sm sm:text-base font-medium hover:bg-opacity-90 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
+                  isLoading ? 'cursor-wait' : ''
+                }`}
               >
-                Save
+                {isLoading ? 'Saving...' : 'Save'}
               </button>
               <button
                 type="button"
-                className="px-4 sm:px-5 py-1 sm:py-1.5 bg-[#B7C6E1] text-[#0A1628] rounded text-sm sm:text-base font-medium hover:bg-opacity-90 shadow-sm"
+                disabled={isLoading}
+                className="px-4 sm:px-5 py-1 sm:py-1.5 bg-[#B7C6E1] text-[#0A1628] rounded text-sm sm:text-base font-medium hover:bg-opacity-90 shadow-sm disabled:opacity-50"
               >
                 Back
               </button>
